@@ -193,14 +193,7 @@ var ToDoItem = Vue.extend({
     }
 });
 
-Vue.component('todo-item', ToDoItem);
-
-var input = $('#time').clockpicker({
-    placement: 'bottom',
-    align: 'left',
-    autoclose: true,
-    'default': 'now'
-});
+Vue.component('todo-item', ToDoItem); 
 
 var map = new google.maps.Map(document.getElementById('map'), {
   zoom: 15
