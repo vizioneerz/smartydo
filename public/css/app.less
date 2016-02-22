@@ -75,6 +75,10 @@ body {
     }
 }
 .list-group-item {
+    cursor: pointer;
+    overflow: hidden;
+    z-index: 1;
+    transition: all ease-in-out .2s;
     .badge  {
         opacity: 0;
         background: red;
@@ -97,6 +101,27 @@ body {
             height: 25px;
             position: absolute;
             right: -35px;
+        }
+    }
+    >.details {
+        display: none;
+        cursor: default;
+        margin: -15px;
+        padding: 0px 20px;
+        background: #efefef;
+        visibility: hidden;
+        height: 0;
+        transition: all ease-in-out .2s;
+    }
+    &.expanded {
+        -webkit-box-shadow: 0 1px 4px 0 rgba(0,0,0,0.14);
+        box-shadow: 0 8px 16px 0 rgba(0,0,0,0.14);
+        >.details {
+            display: block;
+            margin-top: 15px;
+            padding: 20px;
+            visibility: visible;
+            height: auto;
         }
     }
 }

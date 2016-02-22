@@ -41,7 +41,7 @@
         					<span class="label label-primary" v-if="todoinput.time">TIME: @{{ todoinput.time }}</span>
         					<span class="label label-success" v-if="todoinput.date">DATE: @{{ todoinput.date }}</span>
         					<span class="label label-warning" v-if="todoinput.location">LOCATION: @{{ todoinput.location.name }}</span>
-        					<span class="label label-info" v-if="todoinput.book">BOOK: @{{ todoinput.book }}</span>
+        					<span class="label label-info" v-if="todoinput.book">BOOK: @{{ todoinput.book.title }}</span>
         					<span class="label label-danger" v-if="todoinput.movie">MOVIE: @{{ todoinput.movie }}</span>
         					<span class="label label-warning" v-if="todoinput.tv">TV: @{{ todoinput.tv }}</span>
         				</div>
@@ -169,34 +169,40 @@
                       </a>
                     </div>
               </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-              </div>
             </div>
             <input id="location_lat" type="text" class="hidden" v-model="location_lat" value="">
             <input id="location_lng" type="text" class="hidden" v-model="location_lng" value="">
           </div>
       </div>
 
-      <div id="todoModal" class="modal fade" tabindex="-1" role="dialog" style="margin: 0 auto;max-width:750px;">
-          <div class="modal-dialog" style="max-width:750px;">
+        <!-- Book Modal -->
+        <div class="modal fade" id="modalBook" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
             <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <input type="text" class="modal-title form-control" rows='2' value="@{{{ curTodo.content }}}">
-              </div>
               <div class="modal-body">
-                    <div id="todoMap" v-if="curTodo.location" style="width:100%;height:320px;" />
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-              </div>
-            </div><!-- /.modal-content -->
-          </div><!-- /.modal-dialog -->
-        </div><!-- /.modal -->
+                  <input type="text" id="book_name" class="form-control" v-model="bookModalSearch" v-on:keyup="bookModalSearchKeyUp" placeholder="Search for Book" value="">
+                  <div class="spacer20"></div>
+                  <div class="list-group table-of-contents">
+                      <a href="#" class="list-group-item" v-for="book in bookModalResults" v-on:click="bookClickedModal(book)">
+                          <img src="@{{{ book.volumeInfo.imageLinks.smallThumbnail }}}" v-if="book.volumeInfo.imageLinks" style="float:left;max-height:180px;height:auto;margin-right:15px;" />
+                          <img src="https://maxcdn.icons8.com/Color/PNG/48/Printing/books-48.png" v-if="!book.volumeInfo.imageLinks" style="float:left;max-height:48px;height:auto;" />
+                           <h4 class="list-group-item-heading">@{{{ book.volumeInfo.title }}}</h4>
 
+               				<span class="tags" style="book.volumeInfo.authors">
+               					<span class="label label-primary" v-for="author in book.volumeInfo.authors">@{{{ author }}}</span>
+               				</span>
+
+                           <p class="list-group-item-text" style="max-height:115px;overflow:hidden;">@{{{ book.volumeInfo.description }}}</p>
+                      </a>
+                    </div>
+              </div>
+            </div>
+            <input id="location_lat" type="text" class="hidden" v-model="location_lat" value="">
+            <input id="location_lng" type="text" class="hidden" v-model="location_lng" value="">
+          </div>
+      </div> 
+
+        <div id="todoMap" class="hidden" style="height:240px;margin-top:15px;margin-left:-20px;margin-right:-20px;" />
         <div id="map" class="hidden" />
 
         <script src="./js/jquery-2.2.0.min.js" charset="utf-8"></script>
@@ -206,6 +212,7 @@
         <script src="./js/moment.js" charset="utf-8"></script>
         <script src="./js/bootstrap-clockpicker.min.js" charset="utf-8"></script>
         <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA0wKFZHaijYmeQtiCwO9DP_RHDlW08UL8&libraries=places"></script>
+        <script src="./js/jquery.shuffleLetters.js" charset="utf-8"></script>
         <script src="./js/app.js" charset="utf-8"></script>
     </body>
 </html>

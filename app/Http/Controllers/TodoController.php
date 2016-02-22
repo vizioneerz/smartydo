@@ -11,13 +11,14 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use DB;
 use App\Location;
+use App\Book;
 
 class TodoController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-        $todos = Todo::with(['location'])->where('user_id', $user->id)->get();
+        $todos = Todo::with(['location', 'book'])->where('user_id', $user->id)->get();
 
         return response($todos, 200);
     }
@@ -31,6 +32,7 @@ class TodoController extends Controller
             return response('Could not create todo.', 400);
 
         $location = $newTodo['location'];
+        $book = $newTodo['book'];
 
         if (!empty($location)) {
             $location = new Location;
@@ -41,6 +43,14 @@ class TodoController extends Controller
             $location->gid = $newTodo['location']['gid'];
             $location->address = $newTodo['location']['address'];
         }
+        if (!empty($book)) {
+            $book = new Book;
+            $book->title = $newTodo['book']['title'];
+            $book->book_id = $newTodo['book']['book_id'];
+            $book->description = $newTodo['book']['description'];
+            $book->url = $newTodo['book']['url'];
+            $book->image = $newTodo['book']['image'];
+        }
 
         $todo = new Todo;
         $todo->content = $newTodo['content'];
@@ -49,11 +59,15 @@ class TodoController extends Controller
         $todo->date = $newTodo['date'];
         $todo->time = $newTodo['time'];
 
-        DB::transaction(function() use ($location, $todo) {
+        DB::transaction(function() use ($location, $book, $todo) {
             $todo->save();
             if (!empty($location)) {
                 $location->todo_id = $todo->id;
                 $location->save();
+            }
+            if (!empty($book)) {
+                $book->todo_id = $todo->id;
+                $book->save();
             }
         });
 

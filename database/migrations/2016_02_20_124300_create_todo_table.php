@@ -18,7 +18,7 @@ class CreateTodoTable extends Migration
             $table->string('content', 3000);
             $table->integer('completed')->default(0);
             $table->time('time');
-            $table->date('date')
+            $table->date('date');
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
         });

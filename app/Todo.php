@@ -10,4 +10,9 @@ class Todo extends Model
     {
         return $this->hasOne('App\Location', 'todo_id', 'id');
     }
+
+    public function book()
+    {
+        return $this->hasOne('App\Book', 'todo_id', 'id');
+    }
 }

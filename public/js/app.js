@@ -17,6 +17,7 @@ var model = {
 		school: '',
 		book: '',
         url: '',
+        opened: false,
 	},
 	todos: [
 	],
@@ -34,6 +35,8 @@ var model = {
     locationModalResults: [],
     user_location: {},
     curTodo: {},
+    bookModalResults: [],
+    bookModalSearch: '',
 };
 
 
@@ -42,11 +45,36 @@ var model = {
 //
 var ToDoItem = Vue.extend({
 	props: ['todo'],
-	template: '<a class="list-group-item todo" href="#" v-on:click.stop="openTodo(todo)" v-bind:class="classObject">' +
+	template: '<a class="list-group-item todo" href="#" v-on:click.stop="openTodo(todo, $event)" v-bind:class="classObject">' +
 					'<input type="checkbox" v-model="todo.completed" v-on:click.stop="markTodoCompleted(todo)">' +
                     ' <span class="badge delete" v-if="todo.time" v-on:click.stop="deleteTodo(todo)">DELETE</span>' +
                     '{{ todo.content }}' +
                     '<img src="./img/overdue.png" v-if="showOverdue" class="status" />' +
+                    '<div class="details" v-on:click.stop>' +
+
+                        '<div class="tags">' +
+                            '<span class="label label-primary" v-if="todo.time">TIME: {{ timeFormatted }}</span>' +
+                            '<span class="label label-success" v-if="todo.date">DATE: {{ todo.date }}</span>' +
+                            '<span class="label label-warning" v-if="todo.location">LOCATION: {{ todo.location.name }}</span>' +
+                            '<span class="label label-info" v-if="todo.book">BOOK: {{ todo.book.title }}</span>' +
+                            '<span class="label label-danger" v-if="todo.movie">MOVIE: {{ todo.movie }}</span>' +
+                            '<span class="label label-warning" v-if="todo.tv">TV: {{ todo.tv }}</span>' +
+                        '</div>' +
+
+                        '<div v-if="todo.book" style="margin-top:20px;">' +
+                            '<div class="row">' +
+                                '<div class="col-sm-3">' +
+                                    '<img v-bind:src="todo.book.image" v-if="todo.book.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
+                                    '<img src="https://maxcdn.icons8.com/Color/PNG/48/Printing/books-48.png" v-if="!todo.book.image" style="float:left;max-height:180px;height:auto;margin-right:15px;" />' +
+                                 '</div>' +
+                                '<div class="col-sm-9">' +
+                                    '<h4 v-bind:url="todo.book.url">{{ todo.book.title }}</h4> ' +
+                                     '<p style="max-height:115px;overflow:hidden;">{{ todo.book.description }}</p>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+
+                    '</div>' +
 			'</a>',
       computed: {
         timeFormatted: function () {
@@ -93,7 +121,7 @@ var ToDoItem = Vue.extend({
     methods: {
         markTodoCompleted: function(todo, e) {
             todo.completed = todo.completed ? 0 : 1;
-     
+
             $.ajax({
                 method: "PUT",
                 url: "/todos/" + todo.id,
@@ -104,8 +132,56 @@ var ToDoItem = Vue.extend({
                 alert(thrownError);
             });
         },
-        openTodo: function(todo) {
+        openTodo: function(todo, ele) {
             model.curTodo = todo;
+
+            $itm = $(ele.target);
+            var hsClass = $itm.hasClass('expanded');
+
+            if (hsClass) {
+                $itm.toggleClass('expanded');
+            } else {
+                $('.todo-list .todo').removeClass('expanded');
+                $itm.addClass('expanded');
+
+                if (todo.location) {
+                    var map = $('#todoMap').detach();
+                    map.appendTo('#myTabContent .active .todo.expanded>.details');
+                    map.height(180);
+                    map.removeClass('hidden');
+                    var todoMap = new google.maps.Map(document.getElementById('todoMap'), {
+                    center: { lat: parseFloat(todo.location.lat), lng: parseFloat(todo.location.lng) },
+                    zoom: 15
+                });
+                var marker = new google.maps.Marker({
+                    position: { lat: parseFloat(todo.location.lat), lng: parseFloat(todo.location.lng) },
+                    map: todoMap,
+                    title: todo.location.name
+                  });
+                }
+            }
+
+            return;
+
+          if (todo.location && todo.date) {
+              delete $.ajaxSettings.headers['X-CSRF-TOKEN'];
+              $.ajax({
+                method: "GET",
+                url: "http://api.openweathermap.org/data/2.5/forecast/daily?lat=" + todo.location.lat + "&lon=" + todo.location.lng + "&mode=json&units=metric&cnt=8&appid=44db6a862fba0b067b1930da0d769e98",
+              }).done(function( data ) {
+                  var todoDate = moment(todo.date, 'YYYY-MM-DD');
+                  var diffDays = todoDate.diff(moment(), 'days');
+                  if (todoDate.isAfter(moment())) {
+                      if (diffDays < 8) {
+                          var daysWeather = data.list[diffDays];
+                          model.curTodo.weather = daysWeather;
+                      }
+                  }
+              }).error(function(xhr, ajaxOptions, thrownError) {
+                alert(thrownError);
+              });
+              $.ajaxSettings.headers['X-CSRF-TOKEN'] = $('meta[name="csrf-token"]').attr('content');
+          };
 
             $('#todoModal').on('shown.bs.modal', function(e) {
                 if (todo.location) {
@@ -139,8 +215,6 @@ var ToDoItem = Vue.extend({
 
 Vue.component('todo-item', ToDoItem);
 
-
-
 var input = $('#time').clockpicker({
     placement: 'bottom',
     align: 'left',
@@ -171,6 +245,23 @@ var app = new Vue({
 
             // Load Todos
             app.loadTodos();
+
+			var container = $("#todo-input");
+			container.shuffleLetters();
+
+			var num = Math.floor((Math.random() * this.placeholders.length) + 1) - 1;
+			container.shuffleLetters({
+				"text": this.placeholders[num]
+			});
+			var num = Math.floor((Math.random() * this.placeholders.length) + 1) - 1;
+
+			// Leave a 6 sec
+			setInterval(function(){
+				var num = Math.floor((Math.random() * this.model.placeholders.length) + 1) - 1;
+				container.shuffleLetters({
+					"text": this.model.placeholders[num]
+				});
+			}, 6000);
         },
         loadTodos: function() {
             $.ajax({
@@ -195,6 +286,10 @@ var app = new Vue({
                     alert(thrownError);
                 });
                 this.todoinput.content = '';
+                this.todoinput.date = '';
+                this.todoinput.time = '';
+                this.todoinput.location = null;
+                this.todoinput.book = null;
 			}
 		},
         addTodoKeyUp: function(e) {
@@ -230,7 +325,6 @@ var app = new Vue({
 			if (word == "at") {
 				this.suggestions = [
 					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-					{ name: 'Time', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Time_And_Date/clock-24.png', action: 'time_picker' },
 				]
 			} else if (word == "subscription" || word == "subscriptions") {
 				this.suggestions = [
@@ -321,15 +415,16 @@ var app = new Vue({
                     $('#modalMap').modal('show');
                     break;
 
-                case 'time_picker':
-                    input.clockpicker('show')
-                            .clockpicker('toggleView', 'minutes');
-                    break;
-
                 case 'append':
                     model.todoinput.content = model.todoinput.content + " " + suggest.value;
                     model.suggestions = [];
                     $('#todo-input').focus();
+                    break;
+
+                case 'book':
+                    var bookName = suggest.value;
+                    model.todoinput.content = model.todoinput.content + " " + suggest.value;
+                   $('#modalBook').modal('show');
                     break;
 
                 default:
@@ -378,6 +473,43 @@ var app = new Vue({
             app.locationModalSearch = '';
             app.locationModalResults = [];
             $('#todo-input').focus();
+        },
+        bookModalSearchKeyUp: function() {
+          clearTimeout(timer);
+          var ms = 300; // milliseconds
+
+          var bookName = model.bookModalSearch;
+
+          timer = setTimeout(function() {
+              if (bookName) {
+        			$.ajax({
+        			 	url: "https://www.googleapis.com/books/v1/volumes?q=" + bookName,
+        				success: function(data) {
+        					model.bookModalResults = data.items;
+        				},
+        				error: function() {
+        					 model.bookModalResults = [];
+        				}
+        		   });
+        		}
+          }, ms);
+        },
+        bookClickedModal: function(book) {
+            model.todoinput.book = {};
+            model.todoinput.book.book_id = book.id;
+            model.todoinput.book.title = book.volumeInfo.title;
+            model.todoinput.book.description = book.volumeInfo.description;
+            model.todoinput.book.url = book.volumeInfo.previewLink;
+            if (book.volumeInfo.imageLinks)
+                model.todoinput.book.image = book.volumeInfo.imageLinks.smallThumbnail;
+            else
+                model.todoinput.book.image = ' ';
+            model.suggestions = [];
+            model.todoinput.content = model.todoinput.content + " " + book.volumeInfo.title + " ";
+            $('#modalBook').modal('hide');
+            model.locationModalSearch = '';
+            model.locationModalResults = [];
+            $('#todo-input').focus();
         }
     }
 });
@@ -407,43 +539,122 @@ app.load();
 
 function remindWithDayTime() {
     var matchGroup = [
-        // remind me
+        // 0)remind me
         /^(remind me)$/i,
 
-        // remind me today or tomorrow or next week or next month
+        // 1)remind me today or tomorrow or next week or next month
         /^remind me (today|tomorrow|next week|next month)$/i,
 
-        // remind me today or tomorrow or next week or next month at
+        // 2)remind me today or tomorrow or next week or next month at
         /^remind me (today|tomorrow|next week|next month) at$/i,
 
-        // remind me today or tomorrow or next week or next month at noon or midday or midnight
+        // 3)remind me today or tomorrow or next week or next month at noon or midday or midnight
         /^remind me (today|tomorrow|next week|next month) at (noon|midday|midnight)$/i,
 
-        // remind me today or tomorrow or next week or next month at 2pm or 2:00pm or 2 pm or 2:00 pm
+        // 4)remind me today or tomorrow or next week or next month at 2pm or 2:00pm or 2 pm or 2:00 pm
         /^remind me (today|tomorrow|next week|next month) at \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b/i,
 
-        // remind me in or within
+        // 5)remind me in or within
         /^remind me (in|within)$/i,
 
-        // remind me in or within 0-inifinity minutes or hour or days or weeks or months or years
+        // 6)remind me in or within 0-inifinity minutes or hour or days or weeks or months or years
         /^remind me (?:in|within) ([1-9][0-9]*) (min|mins|minute|minutes|hour|hours|day|days|week|weeks|month|months|year|years)$/i,
 
-        // remind me to ___ at ____ today or tomorrow or next week or next month
+        // 7)remind me to ___ at ____ today or tomorrow or next week or next month
         /^remind me to .*(at).*(today|tomorrow|next week|next month).*$/i,
 
-        // remind me at
+        // 8)remind me at
         /^remind me (at)$/i,
 
-        // ____ today or tomorrow or next week at
+        // 9)____ today or tomorrow or next week at
         /^.*(today|tomorrow|next week|next month) at$/i,
 
-        // ____ today or tomorrow or next week at 2pm or 2:00pm or 2 pm or 2:00 pm
+        // 10)____ today or tomorrow or next week at 2pm or 2:00pm or 2 pm or 2:00 pm
         /^.*(today|tomorrow|next week|next month) at \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b.*$/i,
+
+        // 11)read
+        /^(read)$/i,
+
+        // 12)read _____ today or tomorrow or next week
+        /^(read).*(today|tomorrow|next week|next month|tonight|tomorrow night)$/i,
+
+        // 13)read _____ today or tomorrow etc at
+        /^(read).*(today|tomorrow|next week|next month|tonight|tomorrow night) at$/i,
+
+        // 14)read _____ today or tomorrow or next week etc at a time(eg. 2pm)
+        /^(read).*(today|tomorrow|next week|next month|tonight|tomorrow night) (at) \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b$/i,
+
+        //15)watch
+        /^(watch)$/i,
+
+        //16)watch _____ today or tomorrow or next week
+        /^(watch).*(today|tomorrow|next week|next month|tonight|tomorrow night)$/i,
+
+        //17)watch _____ today or tomorrow etc at
+        /^(watch).*(today|tomorrow|next week|next month|tonight|tomorrow night) (at)$/i,
+
+        //18)watch _____ today or tomorrow or next week etc at a time(eg. 2pm)
+        /^(watch).*(today|tomorrow|next week|next month|tonight|tomorrow night) (at) \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b$/i,
+
+        //19)listen
+        /^(listen)$/i,
+
+        //20)listen _____ today or tomorrow or next week
+        /^(listen).*(today|tomorrow|next week|next month|tomorrow night|tonight)$/i,
+
+        //21)listen _____ today or tomorrow etc at
+        /^(listen).*(today|tomorrow|next week|next month|tomorrow night|tonight) (at)$/i,
+
+        //22)listen _____ today or tomorrow or next week etc at a time (eg. 7pm)
+        /^(listen).*(today|tomorrow|next week|next month|tomorrow night|tonight) (at) \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b$/i,
+
+        //23)Pick up
+        /^(pick up)$/i,
+
+        //24)Pick up _____ today or tomorrow or next week
+        /^(pick up).*(today|tomorrow|next week|next month|tomorrow night|tonight)$/i,
+
+        //25)Pick up _____ today or tomorrow etc at
+        /^(pick up).*(today|tomorrow|next week|next month|tomorrow night|tonight) (at)$/i,
+
+        //26)Pick up _____ today or whenever at a time (eg. 7pm)
+        /^(pick up).*(today|tomorrow) (at) \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b$/i,
+
+        //27)Pick up _____ at
+        /^(pick up).*(at)$/i,
+
+        //28)send
+        /^(send)$/i,
+
+        //29)send _____ today or tomorrow or next week
+        /^(send).*(today|tomorrow|next week|next month|tomorrow night|tonight)$/i,
+
+        //30)send _____ today or tomorrow at
+        /^(send).*(today|tomorrow|next week|next month|tomorrow night|tonight) (at)$/i,
+
+        //31)send _____ today or tomorrow at time (eg 7pm)
+        /^(send).*(today|tomorrow|next week|next month|tomorrow night|tonight) (at) \b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b$/i,
+
+        //32)send _____ at
+        /^(send).*(at)$/i,
+
+        //33)send _____ to
+        /^(send).*(to)$/i,
+
+        //34)pay
+        /^(pay)$/i,
+
+        //35)pay _____ today or tomorrow or next week
+        /^(pay).*(today|tomorrow|next week|next month|tomorrow night|tonight)$/i,
+
+        //36) Read book or novel or comic at
+        /^read (book|comic|novel) (.*) (at)$/i,
+
     ];
 
     var result = false;
-    model.todoinput.date = '';
-    model.todoinput.time = '';
+    model.todoinput.date = null;
+    model.todoinput.time = null;
 
     for (var i = 0; i < matchGroup.length; i++) {
         var regEx = matchGroup[i];
@@ -487,7 +698,6 @@ function remindWithDayTime() {
 
     				model.suggestions = [
     					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-    					{ name: 'Time', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Time_And_Date/clock-24.png', action: 'time_picker' },
     				];
                     return;
 
@@ -564,7 +774,6 @@ function remindWithDayTime() {
                         case 'at':
             				model.suggestions = [
             					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-            					{ name: 'Time', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Time_And_Date/clock-24.png', action: 'time_picker' },
             				];
                             break;
                     }
@@ -582,7 +791,6 @@ function remindWithDayTime() {
                         case 'at':
             				model.suggestions = [
             					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-            					{ name: 'Time', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Time_And_Date/clock-24.png', action: 'time_picker' },
             				];
                             break;
                     }
@@ -598,7 +806,6 @@ function remindWithDayTime() {
                         case 'at':
             				model.suggestions = [
             					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-            					{ name: 'Time', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Time_And_Date/clock-24.png', action: 'time_picker' },
             				];
                             break;
                     }
@@ -613,6 +820,353 @@ function remindWithDayTime() {
                     setFutureDate(matches[1]);
 
                     setTimeFromRegularTime(matches[2]);
+                    return;
+
+                case 11:
+                    model.todoinput.location = null
+                    model.todoinput.book = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+                    model.suggestions = [
+                        { name: "Book", action: "book", value: "book" , icon: 'https://maxcdn.icons8.com/Color/PNG/24/Printing/books-24.png'},
+                        { name: "Comic", action: "book", value: "comic", icon: 'https://maxcdn.icons8.com/Color/PNG/24/Printing/books-24.png' },
+                        { name: "Novel", action: "book", value: "novel", icon: 'https://maxcdn.icons8.com/Color/PNG/24/Printing/books-24.png' },
+                    ];
+                    return;
+
+                case 12:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 13:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[1]);
+                    //Attempts to fix Location and Time
+                    model.suggestions = [
+                        { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                        ]
+                    return;
+
+                case 14:
+                    if (matches.length < 5) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+
+                    setTimeFromRegularTime(matches[4]);
+                    return;
+
+                case 15:
+                    model.todoinput.location = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    model.suggestions = [
+                        { name: 'Tv Show', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Media_Controls/tv_show-24.png', action: 'tv_show' },
+                        { name: 'Movie', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Folders/movie_projector-24.png', action: 'movie' },
+                    ];
+                    return;
+
+                case 16:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 17:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[3].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 18:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+
+                    var timeMatch = matches[4].toLowerCase();
+                    setTimeFromRegularTime(timeMatch);
+                    return;
+
+                case 19:
+                    model.todoinput.location = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    model.suggestions = [
+                        { name: 'Music', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Music/musical_notes-24.png', action: 'tv_show' },
+                    ];
+                    return;
+
+                case 20:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 21:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[3].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 22:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+
+                    var timeMatch = matches[4].toLowerCase();
+                    setTimeFromRegularTime(timeMatch);
+                    return;
+
+                case 23:
+                    model.todoinput.location = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    model.suggestions = [
+                        { name: 'Food Item', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Food/ingredients-24.png', action: 'append', value: 'groceries' },
+                        { name: 'Kids', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Baby/children-24.png', action: 'append', value: 'kids' },
+                        { name: 'Newspaper', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Very_Basic/news-24.png', action: 'append', value: 'newspaper' },
+                        { name: 'Gift', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Ecommerce/gift-24.png', action: 'append', value: 'gift' },
+                    ];
+                    return;
+
+                case 24:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 25:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[3].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 26:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+
+                    var timeMatch = matches[4].toLowerCase();
+                    setTimeFromRegularTime(timeMatch);
+                    return;
+
+                case 27:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[2].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 28:
+                    model.todoinput.location = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    model.suggestions = [
+                        { name: 'Email', icon: 'https://maxcdn.icons8.com/Color/PNG/24/User_Interface/email-24.png', action: 'append', value: 'email' },
+                        { name: 'Presentation', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Business/training-24.png', action: 'append', value: 'presentation' },
+                        { name: 'Notes', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Messaging/note-24.png', action: 'append', value: 'notes' },
+                        { name: 'Message', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Messaging/chat-24.png', action: 'append', value: 'message' },
+                        { name: 'Resume', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Messaging/contact_card-24.png', action: 'append', value: 'resume' },
+                    ];
+                    return;
+
+                case 29:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 30:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[3].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 31:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+
+                    var timeMatch = matches[4].toLowerCase();
+                    setTimeFromRegularTime(timeMatch);
+                    return;
+
+                case 32:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[2].toLowerCase()) {
+                        case 'at':
+                            model.suggestions = [
+                                { name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 33:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    switch (matches[2].toLowerCase()) {
+                        case 'to':
+                            model.suggestions = [
+                                { name: 'Friend', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Healthcare/groups-24.png', action: 'friend' },
+                                { name: 'Boss', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Business/permanent_job-24.png', action: 'boss' },
+                                { name: 'Relative/Family', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Cinema/family-24.png', action: 'family' },
+                            ];
+                            break;
+                    }
+                    return;
+
+                case 34:
+                    model.todoinput.location = null;
+                    if (matches.length < 2) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    model.suggestions = [
+                        { name: 'Bill', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Finance/bill-24.png', action: 'append', value: 'bill' },
+                        { name: 'Insurance', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Clothing/umbrella-24.png', action: 'append', value: 'insurance' },
+                        { name: 'Tax', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Finance/USD-24.png', action: 'append', value: 'tax' },
+                        { name: 'Fees', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Finance/money_bag-24.png', action: 'append', value: 'fees' },
+                    ];
+                    return;
+
+                case 35:
+                    if (matches.length < 3) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    setFutureDate(matches[2]);
+                    return;
+
+                case 36:
+                    if (matches.length < 4) {
+                        model.suggestions = [];
+                        return;
+                    }
+
+                    var bookName = matches[2];
+                    if (bookName) {
+						$.ajax({
+						 	url: "https://www.googleapis.com/books/v1/volumes?q=" + bookName + "&key=AIzaSyA0wKFZHaijYmeQtiCwO9DP_RHDlW08UL8",
+							success: function(data) {
+                                if (data.items.length > 0 && model.todoinput.book == null)
+                                    model.todoinput.book = data.items[0];
+							},
+							error: function() {
+								 model.suggestions = [];
+							}
+					   });
+					}
+
+                    switch (matches[3].toLowerCase()) {
+                        case 'at':
+            				model.suggestions = [
+            					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
+            				];
+                            break;
+                    }
                     return;
             }
             model.suggestions = [];
@@ -641,6 +1195,16 @@ function setFutureDate(dateStr) {
 
         case 'next month':
             model.todoinput.date = moment().add(1, 'months').format('YYYY-MM-DD');
+            break;
+
+        case 'tomorrow night':
+            model.todoinput.date = moment().add(1, 'days').format('YYYY-MM-DD');
+            model.todoinput.time = "20:00:00";
+            break;
+
+        case 'tonight':
+            model.todoinput.date = moment().format('YYYY-MM-DD');
+            model.todoinput.time = "20:00:00";
             break;
     }
 }
@@ -701,4 +1265,37 @@ function setTimeFromTimeInterval(numVal, type) {
 function tokenizeString(sentence) {
     var tokens = sentence.toLowerCase().split(/\s*\b\s*/);
     return tokens;
+}
+
+var weatherIcons = [
+    {clouds: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/clouds-96.png'},
+    {sun: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/sun-96.png'},
+    {rain: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/rain-96.png'},
+    {snow: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/snow-96.png'},
+    {moderate_rain: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/moderate-rain-96.png'},
+    {partly_cloudy_day: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/partly-cloudy-day-96.png'},
+    {heavy_rain: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/heavy-rain-96.png'},
+    {hail: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/hail-96.png'},
+    {sleet: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/sleet-96.png'},
+    {storm: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/storm-96.png'},
+    {fog_day: 'https://maxcdn.icons8.com/Color/PNG/96/Weather/fog_day-96.png'},
+];
+
+function getWeatherIconLink(weather) {
+    switch (weather) {
+        case clear:
+            weatherIcons.sun;
+            break;
+        default:
+            return weatherIcons.sun;
+    }
+}
+
+function findById(source, id) {
+  for (var i = 0; i < source.length; i++) {
+    if (source[i].id === id) {
+      return source[i];
+    }
+  }
+  return null;
 }
