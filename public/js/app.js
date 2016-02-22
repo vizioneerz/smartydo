@@ -12,12 +12,9 @@ var model = {
 		date: '',
         location: null,
         weather: '',
-		movie: '',
-		tv: '',
-		school: '',
+		video: '',
 		book: '',
         url: '',
-        opened: false,
 	},
 	todos: [
 	],
@@ -178,41 +175,6 @@ var ToDoItem = Vue.extend({
 
             return;
 
-          if (todo.location && todo.date) {
-              delete $.ajaxSettings.headers['X-CSRF-TOKEN'];
-              $.ajax({
-                method: "GET",
-                url: "http://api.openweathermap.org/data/2.5/forecast/daily?lat=" + todo.location.lat + "&lon=" + todo.location.lng + "&mode=json&units=metric&cnt=8&appid=44db6a862fba0b067b1930da0d769e98",
-              }).done(function( data ) {
-                  var todoDate = moment(todo.date, 'YYYY-MM-DD');
-                  var diffDays = todoDate.diff(moment(), 'days');
-                  if (todoDate.isAfter(moment())) {
-                      if (diffDays < 8) {
-                          var daysWeather = data.list[diffDays];
-                          model.curTodo.weather = daysWeather;
-                      }
-                  }
-              }).error(function(xhr, ajaxOptions, thrownError) {
-                alert(thrownError);
-              });
-              $.ajaxSettings.headers['X-CSRF-TOKEN'] = $('meta[name="csrf-token"]').attr('content');
-          };
-
-            $('#todoModal').on('shown.bs.modal', function(e) {
-                if (todo.location) {
-                    var todoMap = new google.maps.Map(document.getElementById('todoMap'), {
-                        center: { lat: parseFloat(todo.location.lat), lng: parseFloat(todo.location.lng) },
-                        zoom: 15
-                    });
-                    var marker = new google.maps.Marker({
-                        position: { lat: parseFloat(todo.location.lat), lng: parseFloat(todo.location.lng) },
-                        map: todoMap,
-                        title: todo.location.name
-                      });
-                }
-            });
-
-            $('#todoModal').modal('show');
         },
         deleteTodo: function(todo) {
             $.ajax({
@@ -226,7 +188,7 @@ var ToDoItem = Vue.extend({
             });
         },
         clickLink: function(url) {
-            window.open(url, '_blank'); 
+            window.open(url, '_blank');
         },
     }
 });
@@ -899,7 +861,7 @@ function remindWithDayTime() {
                     }
 
                     model.suggestions = [
-                        { name: 'Music', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Music/musical_notes-24.png', action: 'tv_show' },
+                        { name: 'Music', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Music/musical_notes-24.png', action: 'append', value: 'music' },
                     ];
                     return;
 
@@ -1081,9 +1043,9 @@ function remindWithDayTime() {
                     switch (matches[2].toLowerCase()) {
                         case 'to':
                             model.suggestions = [
-                                { name: 'Friend', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Healthcare/groups-24.png', action: 'friend' },
-                                { name: 'Boss', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Business/permanent_job-24.png', action: 'boss' },
-                                { name: 'Relative/Family', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Cinema/family-24.png', action: 'family' },
+                                { name: 'Friend', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Healthcare/groups-24.png', action: 'append', value: 'friend' },
+                                { name: 'Boss', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Business/permanent_job-24.png', action: 'append', value: 'my boss' },
+                                { name: 'Relative/Family', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Cinema/family-24.png', action: 'append', value: 'family' },
                             ];
                             break;
                     }

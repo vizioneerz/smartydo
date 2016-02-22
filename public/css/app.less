@@ -24,6 +24,7 @@ body {
 .content {
     width: 100%;
     padding: 120px;
+    position: relative;
 
     .searchbox {
         width: 100%;
@@ -115,6 +116,10 @@ body {
     &.expanded {
         -webkit-box-shadow: 0 1px 4px 0 rgba(0,0,0,0.14);
         box-shadow: 0 8px 16px 0 rgba(0,0,0,0.14);
+        -ms-transform: scale(1.025,1.035);
+        -webkit-transform: scale(1.025,1.035);
+        transform: scale(1.025,1.025);
+        z-index: 2;
         >.details {
             display: block;
             margin-top: 15px;
@@ -127,4 +132,23 @@ body {
 
 *[url] {
     cursor: pointer;
+}
+
+.cred {
+    position: absolute;
+    bottom: 30px;
+    font-weight: 600;
+    font-size: 16px;
+    width: 100%;
+    text-align: center;
+}
+
+.nothing {
+    position: absolute;
+    margin: 0 auto;
+    width: 140px;
+    height: 140px;
+    left: 50%;
+    margin-left: -70px;
+    top: 340px;
 }

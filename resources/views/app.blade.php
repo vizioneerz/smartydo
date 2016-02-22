@@ -13,6 +13,10 @@
 
     <body id="app">
 
+    <img class="nothing" v-if="todos == 0" src="https://maxcdn.icons8.com/Color/PNG/96/Ecommerce/empty_box-96.png" />
+
+    <span class="cred"><a href="http://vizioneerz.com/" target="_blank">Made by Vizioneerz with Coffee</a></span>
+
         <nav class="navbar navbar-inverse navbar-fixed-top">
           <div class="container">
             <div class="navbar-header">
@@ -27,7 +31,7 @@
 
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
               <ul class="nav navbar-nav navbar-right">
-                <!-- <li><a href="#">Link</a></li> -->
+                <li><a href="#">{{ $user->first_name . ' ' . $user->last_name }}</a></li>
               </ul>
             </div>
           </div>
