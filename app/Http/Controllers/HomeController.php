@@ -28,4 +28,10 @@ class HomeController extends Controller
         $user = Auth::user();
         return view('app')->with(['user' => $user]);
     }
+
+    public function about()
+    {
+        $user = Auth::user();
+        return view('about')->with('user', $user);
+    }
 }

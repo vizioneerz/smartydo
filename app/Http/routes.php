@@ -31,6 +31,8 @@ Route::group(['middleware' => 'web'], function () {
         return redirect('/');
     });
 
+    Route::get('/about', 'HomeController@about');
+
     Route::resource('/todos', 'TodoController');
 
     Route::get('/google/search', 'ExternalController@searchLocations');
