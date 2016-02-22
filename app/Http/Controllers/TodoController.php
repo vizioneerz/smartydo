@@ -12,13 +12,14 @@ use App\Http\Controllers\Controller;
 use DB;
 use App\Location;
 use App\Book;
+use App\Video;
 
 class TodoController extends Controller
 {
     public function index()
     {
         $user = Auth::user();
-        $todos = Todo::with(['location', 'book'])->where('user_id', $user->id)->get();
+        $todos = Todo::with(['location', 'book', 'video'])->where('user_id', $user->id)->get();
 
         return response($todos, 200);
     }
@@ -33,6 +34,7 @@ class TodoController extends Controller
 
         $location = $newTodo['location'];
         $book = $newTodo['book'];
+        $video = $newTodo['video'];
 
         if (!empty($location)) {
             $location = new Location;
@@ -51,6 +53,14 @@ class TodoController extends Controller
             $book->url = $newTodo['book']['url'];
             $book->image = $newTodo['book']['image'];
         }
+        if (!empty($video)) {
+            $video = new Video;
+            $video->title = $newTodo['video']['title'];
+            $video->video_id = $newTodo['video']['video_id'];
+            $video->overview = $newTodo['video']['overview'];
+            $video->url = $newTodo['video']['url'];
+            $video->image = $newTodo['video']['image'];
+        }
 
         $todo = new Todo;
         $todo->content = $newTodo['content'];
@@ -59,7 +69,7 @@ class TodoController extends Controller
         $todo->date = $newTodo['date'];
         $todo->time = $newTodo['time'];
 
-        DB::transaction(function() use ($location, $book, $todo) {
+        DB::transaction(function() use ($location, $book, $video, $todo) {
             $todo->save();
             if (!empty($location)) {
                 $location->todo_id = $todo->id;
@@ -68,6 +78,10 @@ class TodoController extends Controller
             if (!empty($book)) {
                 $book->todo_id = $todo->id;
                 $book->save();
+            }
+            if (!empty($video)) {
+                $video->todo_id = $todo->id;
+                $video->save();
             }
         });
 

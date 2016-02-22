@@ -15,4 +15,9 @@ class Todo extends Model
     {
         return $this->hasOne('App\Book', 'todo_id', 'id');
     }
+
+    public function video()
+    {
+        return $this->hasOne('App\Video', 'todo_id', 'id');
+    }
 }

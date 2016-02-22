@@ -197,10 +197,29 @@
                     </div>
               </div>
             </div>
-            <input id="location_lat" type="text" class="hidden" v-model="location_lat" value="">
-            <input id="location_lng" type="text" class="hidden" v-model="location_lng" value="">
           </div>
-      </div> 
+      </div>
+
+        <!-- Movie and TV Show Modal -->
+        <div class="modal fade" id="modalVideo" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+          <div class="modal-dialog" role="document">
+            <div class="modal-content">
+              <div class="modal-body">
+                  <input type="text" id="video_name" class="form-control" v-model="videoModalSearch" v-on:keyup="videoModalSearchKeyUp" placeholder="Search for Movie or TV Show" value="">
+                  <div class="spacer20"></div>
+                  <div class="list-group table-of-contents">
+                      <a href="#" class="list-group-item" v-for="video in videoModalResults" v-on:click="videoClickedModal(video)">
+                          <img src="@{{{'https://image.tmdb.org/t/p/w185' + video.poster_path }}}" v-if="video.poster_path" style="float:left;max-height:180px;height:auto;margin-right:15px;" />
+                          <img src="http://www.movli.com/images/movie-default.jpg" v-if="!video.poster_path" style="float:left;max-height:180px;height:auto;margin-right:15px;" />
+                           <h4 class="list-group-item-heading">@{{{ video.title }}}</h4>
+
+                           <p class="list-group-item-text" style="max-height:115px;overflow:hidden;">@{{{ video.overview }}}</p>
+                      </a>
+                    </div>
+              </div>
+            </div>
+          </div>
+      </div>
 
         <div id="todoMap" class="hidden" style="height:240px;margin-top:15px;margin-left:-20px;margin-right:-20px;" />
         <div id="map" class="hidden" />

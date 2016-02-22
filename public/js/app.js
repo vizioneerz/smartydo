@@ -37,6 +37,8 @@ var model = {
     curTodo: {},
     bookModalResults: [],
     bookModalSearch: '',
+    videoModalResults: [],
+    videoModalSearch: '',
 };
 
 
@@ -65,11 +67,24 @@ var ToDoItem = Vue.extend({
                             '<div class="row">' +
                                 '<div class="col-sm-3">' +
                                     '<img v-bind:src="todo.book.image" v-if="todo.book.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
-                                    '<img src="https://maxcdn.icons8.com/Color/PNG/48/Printing/books-48.png" v-if="!todo.book.image" style="float:left;max-height:180px;height:auto;margin-right:15px;" />' +
+                                    '<img v-bind:src="http://penguinrandomhouse.ca/sites/default/files/default-book.png" v-if="!todo.book.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
                                  '</div>' +
                                 '<div class="col-sm-9">' +
                                     '<h4 v-bind:url="todo.book.url">{{ todo.book.title }}</h4> ' +
                                      '<p style="max-height:115px;overflow:hidden;">{{ todo.book.description }}</p>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+
+                        '<div v-if="todo.video" style="margin-top:20px;">' +
+                            '<div class="row">' +
+                                '<div class="col-sm-3">' +
+                                    '<img v-bind:src="todo.video.image" v-if="todo.video.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
+                                    '<img v-bind:src="http://www.movli.com/images/movie-default.jpg" v-if="!todo.video.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
+                                 '</div>' +
+                                '<div class="col-sm-9">' +
+                                    '<h4 v-bind:url="todo.video.url">{{ todo.video.title }}</h4> ' +
+                                     '<p style="max-height:115px;overflow:hidden;">{{ todo.video.overview }}</p>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -308,96 +323,8 @@ var app = new Vue({
                 return;
             }
 
-            // Atempty using regex
-
-            var result = remindWithDayTime();
-            if (result) {
-                return;
-            }
-
-
-            return;
-
-
-            var words = app.stringToWords(this.todoinput.content.toLowerCase());
-			var word = words[words.length-1];
-
-			if (word == "at") {
-				this.suggestions = [
-					{ name: 'Location', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Maps/marker-24.png', action: 'map' },
-				]
-			} else if (word == "subscription" || word == "subscriptions") {
-				this.suggestions = [
-					{ name: 'Amazon Prime', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Ecommerce/delivery-24.png' },
-					{ name: 'Netflix', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Photo_Video/showing_video_frames-24.png' },
-					{ name: 'Hulu Plus', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Photo_Video/showing_video_frames-24.png' },
-					{ name: 'Google Music', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Very_Basic/music-24.png' },
-					{ name: 'Gym', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Sports/barbell-24.png' },
-				]
-			} else if (word == "gym" || (word == "membership" && words[words.length-2] == "gym")) {
-				$.ajax({
-				 	url: "https://api.foursquare.com/v2/venues/search?client_id=USJJWMVVJSNGILULOHHBDYFROKFZBMWYF3DC2JS5PL2N3ECK&client_secret=EJB1SGY2AB2S5QSMSNR30VX5Z4G5IMMFQAHVRDSO5DU4CAZO&v=20130815&ll=" + model.location.latitude + "," + model.location.longitude + "&query=gym",
-					success: function(data) {
-						model.suggestions = [];
-						for (var i = 0; i < (data.response.venues.length > 10 ? 10 : data.response.venues.length); i++) {
-							var newSuggest = {
-								name: data.response.venues[i].name,
-								icon: 'https://maxcdn.icons8.com/Color/PNG/24/Sports/barbell-24.png',
-								gym: data.response.venues[i],
-							};
-							model.suggestions.push(newSuggest);
-						};
-					},
-					error: function() {
-						 model.suggestions = [];
-					}
-				});
-			} else if (word == "membership") {
-				this.suggestions = [
-					{ name: 'Gym', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Sports/barbell-24.png' },
-				]
-			}
-             else {
-                this.suggestions = [];
-            }
-
-			// Parse date
-			var timeWords = [ 'today', 'tonight', 'midday', 'afternoon', 'tomorrow', 'next week', 'next month', 'evening'];
-			for (var i = timeWords.length - 1; i >= 0; i--) {
-				if (this.todoinput.content.toLowerCase().includes(timeWords[i])) {
-					switch (timeWords[i]) {
-						case 'tonight':
-							this.todoinput.date = timeWords[i];
-							this.todoinput.time = '20:00';
-							break;
-
-						case 'midday':
-							this.todoinput.time = '12:00';
-							break;
-
-						case 'afternoon':
-							this.todoinput.time = '14:00';
-							break;
-
-						case 'evening':
-							this.todoinput.time = '18:00';
-							break;
-
-						default:
-							this.todoinput.date = timeWords[i];
-							break;
-					}
-					break;
-				}
-            }
-
-			// Regular Expression to extract time
-			var rx = /\b((?:0?[1-9]|1[0-2])(?!\d| (?![ap]))[:.]?(?:(?:[0-5][0-9]))?(?:\s?[ap]m)?)\b/;
-			var timeMatch = rx.exec(this.todoinput.content);
-			if (timeMatch) {
-				// Save time
-				this.todoinput.time = timeMatch[0];
-			}
+            // Atempt parsing using regex
+            remindWithDayTime();
         },
 		stringToWords: function(sentence) {
 			var punctuationless = sentence.replace(/[.,-\/#!$%\^&\*;:{}=\-_`~()]/g,"");
@@ -421,10 +348,16 @@ var app = new Vue({
                     $('#todo-input').focus();
                     break;
 
-                case 'book':
-                    var bookName = suggest.value;
+                case 'tv_show':
                     model.todoinput.content = model.todoinput.content + " " + suggest.value;
-                   $('#modalBook').modal('show');
+                    model.suggestions = [];
+                    $('#modalVideo').modal('show');
+                    break;
+
+                case 'movie':
+                    model.todoinput.content = model.todoinput.content + " " + suggest.value;
+                    model.suggestions = [];
+                    $('#modalVideo').modal('show');
                     break;
 
                 default:
@@ -507,6 +440,43 @@ var app = new Vue({
             model.suggestions = [];
             model.todoinput.content = model.todoinput.content + " " + book.volumeInfo.title + " ";
             $('#modalBook').modal('hide');
+            model.locationModalSearch = '';
+            model.locationModalResults = [];
+            $('#todo-input').focus();
+        },
+        videoModalSearchKeyUp: function() {
+          clearTimeout(timer);
+          var ms = 300; // milliseconds
+
+          var videoName = model.videoModalSearch;
+
+          timer = setTimeout(function() {
+    			if (videoName) {
+                    delete $.ajaxSettings.headers['X-CSRF-TOKEN'];
+    				$.ajax({
+    				 	url: "http://api.themoviedb.org/3/search/movie?api_key=fe186b63a7467f37f45b11043ea0eb63&append_to_response=images&query=" + videoName,
+                        method: 'GET',
+    					success: function(data) {
+    						model.videoModalResults = data.results;
+    					},
+    					error: function() {
+    						model.videoModalResults = [];
+    					}
+    				});
+                    $.ajaxSettings.headers['X-CSRF-TOKEN'] = $('meta[name="csrf-token"]').attr('content');
+                }
+              }, ms);
+        },
+        videoClickedModal: function(video) {
+            model.todoinput.video = {};
+            model.todoinput.video.video_id = video.id;
+            model.todoinput.video.title = video.title;
+            model.todoinput.video.overview = video.overview;
+            model.todoinput.video.url = 'https://www.themoviedb.org/movie/' + video.id;
+            model.todoinput.video.image = 'https://image.tmdb.org/t/p/w185' + video.poster_path;
+            model.suggestions = [];
+            model.todoinput.content = model.todoinput.content + " " + video.title + " ";
+            $('#modalVideo').modal('hide');
             model.locationModalSearch = '';
             model.locationModalResults = [];
             $('#todo-input').focus();
@@ -877,8 +847,8 @@ function remindWithDayTime() {
                     }
 
                     model.suggestions = [
-                        { name: 'Tv Show', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Media_Controls/tv_show-24.png', action: 'tv_show' },
-                        { name: 'Movie', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Folders/movie_projector-24.png', action: 'movie' },
+                        { name: 'TV Show', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Media_Controls/tv_show-24.png', action: 'tv_show', value: 'tv show' },
+                        { name: 'Movie', icon: 'https://maxcdn.icons8.com/Color/PNG/24/Folders/movie_projector-24.png', action: 'movie', value: 'movie' },
                     ];
                     return;
 
