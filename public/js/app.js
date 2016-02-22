@@ -47,7 +47,7 @@ var model = {
 //
 var ToDoItem = Vue.extend({
 	props: ['todo'],
-	template: '<a class="list-group-item todo" href="#" v-on:click.stop="openTodo(todo, $event)" v-bind:class="classObject">' +
+	template: '<a class="list-group-item todo" v-on:click.stop="openTodo(todo, $event)" v-bind:class="classObject">' +
 					'<input type="checkbox" v-model="todo.completed" v-on:click.stop="markTodoCompleted(todo)">' +
                     ' <span class="badge delete" v-if="todo.time" v-on:click.stop="deleteTodo(todo)">DELETE</span>' +
                     '{{ todo.content }}' +
@@ -70,7 +70,7 @@ var ToDoItem = Vue.extend({
                                     '<img v-bind:src="http://penguinrandomhouse.ca/sites/default/files/default-book.png" v-if="!todo.book.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
                                  '</div>' +
                                 '<div class="col-sm-9">' +
-                                    '<h4 v-bind:url="todo.book.url">{{ todo.book.title }}</h4> ' +
+                                    '<h4 v-bind:url="todo.book.url" v-on:click.stop="clickLink(todo.book.url)">{{ todo.book.title }}</h4> ' +
                                      '<p style="max-height:115px;overflow:hidden;">{{ todo.book.description }}</p>' +
                                 '</div>' +
                             '</div>' +
@@ -83,7 +83,7 @@ var ToDoItem = Vue.extend({
                                     '<img v-bind:src="http://www.movli.com/images/movie-default.jpg" v-if="!todo.video.image" style="float:left;width:100%;height:auto;margin-right:15px;" />' +
                                  '</div>' +
                                 '<div class="col-sm-9">' +
-                                    '<h4 v-bind:url="todo.video.url">{{ todo.video.title }}</h4> ' +
+                                    '<h4 v-bind:url="todo.video.url" v-on:click.stop="clickLink(todo.video.url)">{{ todo.video.title }}</h4> ' +
                                      '<p style="max-height:115px;overflow:hidden;">{{ todo.video.overview }}</p>' +
                                 '</div>' +
                             '</div>' +
@@ -224,7 +224,10 @@ var ToDoItem = Vue.extend({
             }).error(function(xhr, ajaxOptions, thrownError) {
                 alert(thrownError);
             });
-        }
+        },
+        clickLink: function(url) {
+            window.open(url, '_blank'); 
+        },
     }
 });
 
